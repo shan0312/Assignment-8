@@ -48,6 +48,7 @@ jobs:
                any::gt
                any::ggthemes
                any::scales
+               any::stringr
       - name: Render document
         uses: quarto-dev/quarto-actions/render@v2
         env:
