@@ -27,9 +27,8 @@ jobs:
             packages:
                any::knitr
                any::rmarkdown
-               any::dplyr
+               any::tidyverse
                any::tidyr
-               any::ggplot2
                any::lubridate
                any::googleway
                any::purrr
