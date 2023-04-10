@@ -1,0 +1,170 @@
+---
+title: "A8"
+format: html
+editor: visual
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(tidyverse)
+library(leaflet)
+library(tidycensus)
+library(osmdata)
+library(plotly)
+library(htmltools)
+library(sf)
+library(ggmap)
+library(tmap)
+library(tigris)
+library(viridis, quietly = TRUE)
+library(janitor)
+library(gt)
+library(ggthemes)
+library(scales)
+```
+
+
+
+```{r}
+#Get the bounding box and county outline
+mn.box           <- osmdata::getbb("minnesota")
+hennepin.box     <- osmdata::getbb("hennepin")
+hennepin.outline <- osmdata::getbb("hennepin", format_out = "polygon")[[1]] %>%
+  as_tibble() %>%
+  rename(longitude = V1, latitude = V2)
+mn.box           <- osmdata::getbb("mn")
+mn.outline <- osmdata::getbb("mn", format_out = "polygon")[[1]] %>%
+  as_tibble() %>%
+  rename(longitude = V1, latitude = V2)
+
+
+#Get map from ggmap
+#Get the base map (foundational layer)
+mn_base.map <- get_map(
+                location = mn.box,
+                source   = "stamen",
+                maptype  = "terrain",
+                crop = TRUE
+               )
+
+#Create the base map
+hennepin_base.gg <- ggmap(mn_base.map) +
+  geom_polygon(data = hennepin.outline, aes(x = longitude, y = latitude), colour = "black", size = 1.6, alpha = 0.1) +
+  theme_map() +
+  theme(
+    plot.title   = element_text(size  = 16,
+                                hjust = 0.5),
+    legend.text  = element_text(size = 16),
+    legend.title = element_text(size = 16),
+    legend.position = "right"
+  )
+
+
+#Call the ACS API, returns a sf object
+options(tigris_use_cache = TRUE)
+mn_sex.df <- get_acs(
+  geography = "tract",
+  variables = "B01001_002E", #Code for number of males
+  state     = "MN",
+  county    = "Hennepin",
+  year      = 2020,
+  geometry  = TRUE
+) 
+
+#Add a text label to mn_income.df
+mn_sex_plotly.df <- mn_sex.df %>%
+  mutate(
+    tract = str_split(NAME, ",") %>%
+                 map_chr(1) %>%
+                 str_remove("Census Tract "),
+    text_label = str_c(
+                  "Tract: ",
+                  tract,
+                  "\nsex/Male: ",
+                  estimate
+                 )
+  )
+
+#Generate the ggplot
+income.gg <- ggplot() + 
+  geom_sf(data = mn_sex_plotly.df, 
+          aes(fill = estimate, text = text_label),
+          colour = "black", size = 0.1) + 
+  labs(title = "Hennepin County, MN 2020 ACS Male Sex") + 
+  scale_fill_viridis_c("Number of Male") +
+  theme_map() +
+  theme(
+    plot.title   = element_text(size  = 16,
+                                hjust = 0.5),
+    legend.text  = element_text(size = 16),
+    legend.title = element_text(size = 16),
+    legend.position = "right"
+  )
+
+
+#Display
+ggplotly(income.gg,
+         tooltip = "text",
+         height  = 600,
+         width   = 800) %>%
+    style(hoveron = "fills")
+
+
+#Get the bounding box and county outline
+mn.box           <- osmdata::getbb("minnesota")
+hennepin.box     <- osmdata::getbb("hennepin")
+hennepin.outline <- osmdata::getbb("hennepin", format_out = "polygon")[[1]] %>%
+  as_tibble() %>%
+  rename(longitude = V1, latitude = V2)
+
+
+#Get map from ggmap
+#Get the base map (foundational layer)
+mn_base.map <- get_map(
+                location = hennepin.box,
+                source   = "stamen",
+                maptype  = "terrain",
+                crop = TRUE
+               )
+
+#Create the base map
+hennepin_base.gg <- ggmap(mn_base.map) +
+  geom_polygon(data = hennepin.outline, aes(x = longitude, y = latitude), colour = "black", size = 1.6, alpha = 0.1) +
+  theme_map() +
+  theme(
+    plot.title   = element_text(size  = 16,
+                                hjust = 0.5),
+    legend.text  = element_text(size = 16),
+    legend.title = element_text(size = 16),
+    legend.position = "right"
+  )
+    
+#First, need to make sure the coordinate systems between the ggmap and geom_sf match
+coord_ggmap <- st_crs(hennepin_base.gg) #NA
+coord_sf    <- st_crs(mn_sex_plotly.df) #NAD83
+
+#Overlay thge sf info from tidycensus ACS income estimates
+mn_income.ggmap <- hennepin_base.gg +  
+  geom_sf(data = mn_sex_plotly.df, 
+          aes(fill = estimate, text = text_label),
+          colour = "black", size = 0.1,
+          inherit.aes = FALSE) + 
+  labs(title = "Hennepin County, MN 2020 ACS Male") + 
+  scale_fill_viridis_c("Number of Male") +
+  theme_map() +
+  theme(
+    plot.title   = element_text(size  = 16,
+                                hjust = 0.5),
+    legend.text  = element_text(size = 16),
+    legend.title = element_text(size = 16),
+    legend.position = "right"
+  )
+
+#Display plotly
+ggplotly(mn_income.ggmap,
+         tooltip = "text",
+         height  = 600,
+         width   = 800) %>%
+    style(hoveron = "fills")
+
+```
