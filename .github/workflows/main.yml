@@ -25,41 +25,42 @@ jobs:
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
             packages:
-               #any::knitr
-               #any::rmarkdown
-               #any::tidyverse
-               #any::tidyr
-               #any::lubridate
-               #any::googleway
-               #any::purrr
-               #any::leaflet
-               #any::gepaf
-               #any::tidycensus
-               #any::osmdata
-               #any::plotly
-               #any::htmltools
-               #any::sf
-               #any::ggmap
-               #any::tmap
-               #any::tigris
-               #any::viridis
-               #any::janitor
-               #any::gt
-               #any::ggthemes
-               #any::scales
+               any::knitr
+               any::rmarkdown
+               any::tidyverse
+               any::tidyr
+               any::lubridate
+               any::googleway
+               any::purrr
+               any::leaflet
+               any::gepaf
+               any::tidycensus
+               any::osmdata
+               any::plotly
+               any::htmltools
+               any::sf
+               any::ggmap
+               any::tmap
+               any::tigris
+               any::viridis
+               any::janitor
+               any::gt
+               any::ggthemes
+               any::scales
       - name: Render document
         uses: quarto-dev/quarto-actions/render@v2
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         with:
           to: html
-          path: 1.R
+          path: A8.qmd
       - name: Setup git config
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
       - name: Commit
         run: |
+          git init
           git add .
           git commit -m "Updated report"
-          git push origin main
+          git push -u origin master
